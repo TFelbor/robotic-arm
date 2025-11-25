@@ -387,6 +387,8 @@ main(int argc, char* argv[])
   // to generate script file
   // (example to a blender python script)
 
+  robot.forward_kinematic({0, 0, 0, 0, 0, 0});
+
   Poses poses;
   {
     auto pose = robot.get_current_pose();

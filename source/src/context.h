@@ -114,10 +114,7 @@ class robot {
 
     template<typename... Args>
     exception(const std::string& frmt, Args&&... args) {
-      std::string_view frmt_view{frmt};
       message_ = fmt::format(fmt::runtime(frmt), args...);
     }
   };
 };
-
-

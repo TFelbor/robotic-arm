@@ -1,3 +1,13 @@
+// header-start
+////////////////////////////////////////////////////////////////////////////////
+//
+// \file      logger.h
+// \brief     Robot Inverse Kinematic with Cyclic Coordinate Descent
+//
+////////////////////////////////////////////////////////////////////////////////
+// header-end
+//
+
 #pragma once
 
 #include <iostream>
@@ -43,7 +53,6 @@ class logger {
   // INFO
   template<typename... Args>
   static void info(const std::string& frmt, Args&&... args) {
-    std::string_view frmt_view{frmt};
     std::string astr = fmt::format(fmt::runtime(frmt), args...);
     logger::generic("INFO", astr);
   }
@@ -51,7 +60,6 @@ class logger {
   // WARN
   template<typename... Args>
   static void warn(const std::string& frmt, Args&&... args) {
-    std::string_view frmt_view{frmt};
     std::string astr = fmt::format(fmt::runtime(frmt), args...);
     logger::generic("WARN", astr);
   }
@@ -59,7 +67,6 @@ class logger {
   // ERROR
   template<typename... Args>
   static void error(const std::string& frmt, Args&&... args) {
-    std::string_view frmt_view{frmt};
     std::string astr = fmt::format(fmt::runtime(frmt), args...);
     logger::generic("ERROR", astr);
   }
@@ -69,7 +76,6 @@ class logger {
   template<typename... Args>
   static void debug(const std::string& frmt, Args&&... args) {
     if (logger::enable_debug_) {
-      std::string_view frmt_view{frmt};
       std::string astr = fmt::format(fmt::runtime(frmt), args...);
       logger::generic("DEBUG", astr);
     }
@@ -78,7 +84,6 @@ class logger {
   // TRACE
   template<typename... Args>
   static void trace(const std::string& frmt, Args&&... args) {
-    std::string_view frmt_view{frmt};
     std::string astr = fmt::format(fmt::runtime(frmt), args...);
     logger::generic("TRACE", astr);
   }

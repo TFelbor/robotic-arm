@@ -27,21 +27,11 @@
 #include "stlmesh.h"
 #include "robot.h"
 #include "poses.h"
+#include "glm_util.h"
 
 
 // needed to parse a number in the toml file into a float
 // example angle_min = 1.57
-/*
-    // robot name
-    const auto& robot_name_key = "robot_name";
-    const auto& robot_name_node = tbl_info[robot_name_key];
-    std::string robot_name;
-    if (not robot_name_node) {
-      throw robot::exception("Key '{}' is not found in 'info'", robot_name_key);
-    }
-    robot_name = *(robot_name_node.value<std::string>());
-*/
-
 static float
 get_float(const std::string& joint_name, toml::table& a_table, const std::string& a_key)
 {
@@ -55,11 +45,8 @@ get_float(const std::string& joint_name, toml::table& a_table, const std::string
   return v;
 }
 
-
-
 // parse a vector of three floats
 // example rpy = [-3.141594, 0, 0]
-
 static
 glm::vec3 get_vec3(const std::string& joint_name, toml::table& a_table, const std::string& a_key)
 {
@@ -86,23 +73,6 @@ glm::vec3 get_vec3(const std::string& joint_name, toml::table& a_table, const st
   }
   return res3d;
 }
-
-/*
-  for (size_t idx = 0; idx < 3; ++idx) {
-    toml::value& an_item = an_array.at(idx);
-    float v = 0.0f;
-    if (an_item.type() == toml::value_t::floating) {
-      v = static_cast<float>(an_item.as_floating());
-    } else if (an_item.type() == toml::value_t::integer) {
-      v = static_cast<float>(an_item.as_integer());
-    } else {
-      throw robot::exception(
-          "Entry of vector '{}' is not a value for joint '{}'", a_key,
-          joint_name);
-    }
-    res3d[idx] = v;
-  }
-*/
 
 //
 // create a robot based on a config file
@@ -136,10 +106,6 @@ Robot::Robot(const std::string& name, const std::string &root_path, toml::table&
     }
   }
 }
-
-//[info]
-//  robot_name = 'Kinova Gen3 6DF with vision'
-//  root_path =  '../meshes/6dof'
 
 void
 Robot::create_one_link(toml::table& link_table)
@@ -216,11 +182,6 @@ Robot::create_one_link(toml::table& link_table)
   }
 
 }
-// [[links]]
-//   name = 'L00.Base'
-//   path = 'meshes/base_link.stl'
-//   istarget = 1   (optional)
-//   isroot   = 1   (optional)
 
 void
 Robot::create_links(toml::table& top_level_data)
@@ -233,78 +194,6 @@ Robot::create_links(toml::table& top_level_data)
     create_one_link(item);
   });
 }
-/*
-  // list of mandatory entries
-  std::map<std::string, decltype(toml::value_t::table)> link_entries{
-      {"name", toml::value_t::string},
-      {"path", toml::value_t::string}
-  };
-
-  static constexpr auto info_key = "info"sv;
-  static constexpr auto links_key = "links"sv;
-
-
-  try {
-    auto& tbl_info = top_level_data.find(info_key);
-    const auto stl_root_path = toml::find<std::string>(tbl_info, "root_path");
-    auto list_of_links =
-        top_level_data.find<std::vector<toml::table>>(links_key);
-    auto& mesh_factory = StlMeshFactory::instance();
-
-    // loop over all the entries in [[links]]
-    //
-    for (toml::table& a_table : list_of_links) {
-
-      // verify that the table has all the entries
-      for (const auto& an_entry : link_entries) {
-        auto& [a_key, a_type] = an_entry;
-        if (a_table.count(a_key) == 0) {
-          throw robot::exception("Missing '{0}' entry in table 'links'", a_key);
-        }
-        if (a_table.at(a_key).type() != a_type) {
-          throw robot::exception("Entry '{}' has wrong type in table 'links'", a_key);
-        }
-      }
-
-      // read the associated mesh and compute the bbox
-
-      std::string& link_name = a_table["name"].as_string();
-      std::string& stl_file_name = a_table["path"].as_string();
-      Link link(link_name, stl_file_name);
-
-      std::string stl_filepath = stl_root_path + "/" + stl_file_name;
-      auto& mesh = mesh_factory.create_from_stlfile(link_name, stl_filepath);
-      auto& bbox = mesh.get_bbox();
-      link.set_bbox(bbox);
-      // take care of optional configuration
-      link.is_target(false);
-      if (a_table.count("istarget") != 0) {
-        link.is_target(true);
-      }
-
-      add_link(link);
-      mesh.info();
-    }
-  } catch (const robot::exception& err) {
-    logger::fatal(err.what());
-    std::exit(1);
-  }
-}
-*/ 
-/////////////////////////////////////////////////
-// JOINT PROCESSING
-//
-// [[joints]]
-//   name = 'J00'
-//   type = 'continous'
-//   parent = 'L00.Base'
-//   child = 'L01.Shoulder'
-//   xyz = [ 0, 0, 0.15643 ]
-//   rpy = [-3.141594, 0, 0]
-//   axis = [0, 0, 1]
-//   angle_min = 0
-//   angle_max = 0
-//   angle_default = 0
 
 void
 Robot::create_one_joint(toml::table& joint_table)
@@ -349,10 +238,6 @@ Robot::create_one_joint(toml::table& joint_table)
     glm::vec3 translation3d = get_vec3(joint_name, joint_table, "xyz");
     glm::vec3 rpy3d = get_vec3(joint_name, joint_table, "rpy");
 
-    // std::cout << "[DEBUG] processing joint  " << joint_name << std::endl;
-    // std::cout << "[DEBUG] joint translation " << translation3d <<
-    // std::endl; std::cout << "[DEBUG] joint rotation    " << rpy3d <<
-    // std::endl;
     ajoint.set_local(translation3d, rpy3d);
 
     std::string joint_type;
@@ -391,11 +276,6 @@ Robot::create_joints(toml::table& top_level_data)
   });
 }
 
-/*
-}
-*/
-
-
 //
 //   <<<<LINK>>> <<JOINT>> <<<<LINK>>>>
 //
@@ -426,10 +306,6 @@ void
 Robot::add_joint(Joint& a_joint, const std::string& parent_name, const std::string& child_name)
 {
   const std::string& joint_name = a_joint.name();
-
-  // validate that the joint name is unique
-  // we could have used a map, but number of ajoint is small
-  // so we just iterate of each joints
 
   bool named_is_used = std::ranges::any_of( joints_,
       [&joint_name](const Joint& ith_joint) -> bool {
@@ -465,16 +341,7 @@ Robot::add_joint(Joint& a_joint, const std::string& parent_name, const std::stri
   }
 
   // validation of the correctness of the joint
-  // *  cannot have a joint with re-convergent parents
-  //    if parent1->jointX->child3 exits we cannot have
-  //    parent2->jointX->child3
-  //
-  //     Link.parent1
-  //                |
-  //                jointX--Link.child3
-  //                |
-  //     Link.parent2
-  //
+  // * cannot have a joint with re-convergent parents
   for (auto& a_pjc_item : joint_link_chains_) {
     auto& child_name_used = std::get<2>(a_pjc_item);
     if (child_name_used == child_name) {
@@ -494,23 +361,11 @@ Robot::add_joint(Joint& a_joint, const std::string& parent_name, const std::stri
   joints_.push_back(a_joint);
 }
 
-  // warp-up here
-  // connect the joint to the links.
-  //
-  // a_joint.set_link_names(parent_name, child_name);
-  //
-  // parent_link.add_joint_child_side(joint_name);
-  // child_link.add_joint_parent_side(joint_name);
-
 
 void
 Robot::add_link(const Link& a_link)
 {
   const std::string& link_name = a_link.name();
-
-  // validate that the name is unique
-  // we could have used a map, but number of links is small
-  // so we just iterate of each links
 
   bool named_is_used = std::ranges::any_of(links_,
     [&link_name](const Link& ith_link) -> bool {
@@ -528,9 +383,6 @@ Robot::add_link(const Link& a_link)
 //
 // find_root_link()
 // make sure that only 1 root link exists
-// iterating over the joint_link_chains_
-// { parent link, joint, child link }
-// if a link appears only on position [0] then is a root joint
 
 void
 Robot::find_root_link()
@@ -574,18 +426,14 @@ Robot::find_root_link()
 void
 Robot::validate()
 {
-  // step 1.
-  // find the root link
-
+  // step 1. find the root link
   find_root_link();
 
-  // step 2.
-  // creates pointer links
-
+  // step 2. creates pointer links
   for (auto& a_pjc : joint_link_chains_) {
-    Link*  parent_link_ptr = std::addressof(find_link_from_name(  std::get<0>(a_pjc)));
+    Link* parent_link_ptr = std::addressof(find_link_from_name(  std::get<0>(a_pjc)));
     Joint* joint_ptr       = std::addressof(find_joint_from_name( std::get<1>(a_pjc)));
-    Link*  child_link_ptr  = std::addressof(find_link_from_name(  std::get<2>(a_pjc)));
+    Link* child_link_ptr  = std::addressof(find_link_from_name(  std::get<2>(a_pjc)));
 
     parent_link_ptr->add_child_joint(joint_ptr);
     child_link_ptr->add_parent_link(parent_link_ptr);
@@ -593,9 +441,7 @@ Robot::validate()
     joint_ptr->add_child_link(child_link_ptr);
   }
 
-  // step 3.
-  // set target link and verify only one target is set
-
+  // step 3. set target link and verify only one target is set
   bool found_it = false;
   p_target_link_ = nullptr;
   for (auto& a_link : links_) {
@@ -752,10 +598,42 @@ Robot::forward_kinematic(const std::vector<float>& angles)
 
   logger::info("Compute forward kinematic with angles {:g}", fmt::join(angles_in_degrees, ","));
   
-  logger::info("---- FK Student code start here");
-  // student code start
-  // student code end
-  logger::info("---- FK Student code finish here");
+  logger::info("---- FK code start here");
+  // code start
+
+  if (angles.size() != nonfixed_joint_indexes_.size()) {
+    logger::error("Mismatch between provided angles count ({}) and degrees of freedom ({})", 
+                  angles.size(), nonfixed_joint_indexes_.size());
+    return false;
+  }
+
+  // 1. Set the angles for all non-fixed joints
+  for (size_t i = 0; i < angles.size(); ++i) {
+    Joint& joint = get_ith_nonfixed_joint(i);
+    joint.set_angle(angles[i]);
+  }
+
+  // 2. Propagate transforms from the root down to the leaves
+  // We use a lambda to recursively update the global transforms
+  std::function<void(Link*)> update_transforms_recursive = [&](Link* link) {
+    link->foreach_child_joint([&](Joint* joint) {
+      Link* child_link = joint->child_link();
+      
+      // The child's global transform is ParentGlobal * JointLocal
+      glm::mat4 child_global = link->get_transform() * joint->get_local_transform();
+      child_link->set_transform(child_global);
+      
+      // Recursively update the children of this link
+      update_transforms_recursive(child_link);
+    });
+  };
+
+  // Ensure root starts with its base transform (usually identity)
+  p_root_link_->set_transform(root_transform_);
+  update_transforms_recursive(p_root_link_);
+
+  // code end
+  logger::info("---- FK code finish here");
 
 
 
@@ -769,6 +647,44 @@ Robot::forward_kinematic(const std::vector<float>& angles)
   std::cout << "Target Transform = "; std::cout << target_transform << std::endl;
 
   return true ;
+}
+
+// Helper function to optimize a single joint
+// Returns the distance to target after optimization
+float 
+Robot::cyclic_coordinate_descent_single_joint(Joint& joint, float cyclic_coordinate_descent_cost)
+{
+    float best_angle = joint.get_angle();
+    float min_dist = cyclic_coordinate_descent_cost;
+
+    auto [min_a, max_a] = joint.get_min_max_angles();
+    
+    // Sampling strategy: iterate over the valid range
+    float step = glm::radians(2.0f); // 2 degree step size
+    
+    // Extract target position
+    glm::vec3 target_pos = glm::vec3(target_transform_[3]);
+
+    for (float angle = min_a; angle <= max_a; angle += step) {
+        joint.set_angle(angle);
+        propagate_transform(joint); // Update chain for this trial
+        
+        // Check distance
+        const glm::mat4& ee_transform = p_target_link_->get_transform();
+        glm::vec3 ee_pos = glm::vec3(ee_transform[3]);
+        float dist = glm::distance(ee_pos, target_pos);
+        
+        if (dist < min_dist) {
+            min_dist = dist;
+            best_angle = angle;
+        }
+    }
+
+    // Set joint to the best found angle
+    joint.set_angle(best_angle);
+    propagate_transform(joint);
+    
+    return min_dist;
 }
 
 //
@@ -792,10 +708,38 @@ Robot::inverse_kinematic(IKParams& ik_params)
   
 
 
-  logger::info("---- IK Student code start here");
-  // student code start
-  // student code end
-  logger::info("---- IK Student code end here");
+  logger::info("---- IK code start here");
+  // code start
+
+  // Initialize distance
+  glm::vec3 target_pos = glm::vec3(target_transform_[3]);
+  const glm::mat4& start_ee_transform = p_target_link_->get_transform();
+  ccd_distance_to_target = glm::distance(glm::vec3(start_ee_transform[3]), target_pos);
+
+  // CCD Loop
+  for(size_t iter = 0; iter < ik_params.nb_iterations_; ++iter) {
+      
+      // Iterate joints from End-Effector to Root (reverse order)
+      for (auto it = nonfixed_joint_indexes_.rbegin(); it != nonfixed_joint_indexes_.rend(); ++it) {
+          Joint& joint = joints_[*it];
+          
+          // Optimize this specific joint
+          ccd_distance_to_target = cyclic_coordinate_descent_single_joint(joint, ccd_distance_to_target);
+      }
+
+      // Check for convergence
+      if (ccd_distance_to_target < 0.01f) {
+          logger::info("Converged at iteration {}", iter);
+          break;
+      }
+      
+      if (iter % 10 == 0) {
+          logger::debug("Iteration {}, Distance: {}", iter, ccd_distance_to_target);
+      }
+  }
+
+  // code end
+  logger::info("---- IK code end here");
 
   logger::info("Final distance after {} iterations is {}", ik_params.nb_iterations_, ccd_distance_to_target);
 

@@ -45,7 +45,8 @@ if (WIN32)
 else()
   target_link_libraries(${TARGET1} glm::glm)
   target_link_libraries(${TARGET1} toml11::toml11)
-  target_link_libraries(${TARGET1} fmt)
+  # CHANGED: Use the namespaced target 'fmt::fmt' to ensure the linker uses the correct library path
+  target_link_libraries(${TARGET1} fmt::fmt)
 endif()
 target_link_libraries(${TARGET1} m)
 

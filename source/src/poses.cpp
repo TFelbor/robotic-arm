@@ -139,6 +139,7 @@ Poses::write_blender_script(const std::string& filename) const
 //  ostrm << fmt::format("# file generated on {:%F %T %Z}\n", *std::gmtime(&utc_time));
     ostrm << fmt::format("# by {}\n", RunContext::instance().get_username());
     ostrm << fmt::format("#\n");
+    ostrm << fmt::format("import bpy\n"); // <--- ADDED THIS LINE
     ostrm << fmt::format("# to load this file, on the blender python console type the following\n");
     ostrm << fmt::format("# for linux:\n");
     ostrm << fmt::format("# myfile = '/the/full/path/to/{}'\n", filename);
@@ -193,56 +194,3 @@ Poses::write_blender_script(const std::string& filename) const
     std::abort();
   }
 }
-
-#if 0
-    // use default position
-    for (const auto& link : links_) {
-      link.print_blender_script(ostrm, true);
-    }
-
-    for (const auto& link : links_) {
-      const std::string& name = link.name();
-      ostrm << "obj = bpy.data.objects['" << name << "']\n";
-      ostrm << "obj.keyframe_insert(data_path='location',frame=1)\n";
-      ostrm << "obj.keyframe_insert(data_path='rotation_euler',frame=1)\n";
-    }
-
-    ostrm << "#\n";
-    ostrm << "# set final position\n";
-    ostrm << "#\n";
-
-    for (const auto& link : links_) {
-      link.print_blender_script(ostrm);
-    }
-
-    int last_frame = 180;
-
-    ostrm << "#\n";
-    ostrm << "# assign final position to keyframe " << last_frame << "\n";
-    ostrm << "#\n";
-
-    for (const auto& link : links_) {
-      const std::string& name = link.name();
-      ostrm << "obj = bpy.data.objects['" << name << "']\n";
-      ostrm << "obj.keyframe_insert(data_path='location',frame=" << last_frame
-            << ")\n";
-      ostrm << "obj.keyframe_insert(data_path='rotation_euler',frame="
-            << last_frame << ")\n";
-    }
-
-    // select the target object
-
-    ostrm << "#\n";
-    ostrm << "# select the target object\n";
-    ostrm << "#\n";
-    for (const auto& link : links_) {
-      if (link.is_target()) {
-        ostrm << "ob = bpy.context.scene.objects[\"" << link.name() << "\"]\n";
-        ostrm << "bpy.ops.object.select_all(action='DESELECT')\n";
-        ostrm << "bpy.context.view_layer.objects.active = ob\n";
-        ostrm << "ob.select_set(True)\n";
-        break;
-      }
-    }
-#endif
-
